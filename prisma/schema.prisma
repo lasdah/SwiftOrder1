@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Restaurant {
+  id                    String            @id @default(cuid())
+  name                  String
+  stripeAccountId       String?
+  platformFeePercent    Float             @default(5)
+  allowCustomerComments Boolean           @default(true)
+  tables                RestaurantTable[]
+  menuItems             MenuItem[]
+  orders                Order[]
+  pendingCheckouts      PendingCheckout[]
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+}
+
+model RestaurantTable {
+  id             String            @id @default(cuid())
+  restaurantId   String
+  tableNumber    String
+  qrCodeUrl      String
+  restaurant     Restaurant        @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orders         Order[]
+  pendingOrders  PendingCheckout[]
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  @@unique([restaurantId, tableNumber])
+  @@map("Table")
+}
+
+model MenuItem {
+  id                String      @id @default(cuid())
+  restaurantId      String
+  name              String
+  thumbnailUrl      String?
+  quantityAvailable Int         @default(0)
+  price             Int
+  description       String
+  isAvailable       Boolean     @default(true)
+  restaurant        Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  orderItems        OrderItem[]
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model Order {
+  id                      String          @id @default(cuid())
+  restaurantId            String
+  tableId                 String
+  orderNumber             Int
+  status                  String          @default("RECEIVED")
+  customerComment         String?
+  stripeCheckoutSessionId String          @unique
+  stripePaymentIntentId   String?
+  totalAmount             Int
+  restaurant              Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table                   RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  items                   OrderItem[]
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+
+  @@unique([restaurantId, orderNumber])
+}
+
+model OrderItem {
+  id               String    @id @default(cuid())
+  orderId          String
+  menuItemId       String?
+  quantity         Int
+  unitPrice        Int
+  itemNameSnapshot String
+  order            Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem         MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+}
+
+model PendingCheckout {
+  id                      String          @id @default(cuid())
+  restaurantId            String
+  tableId                 String
+  customerComment         String?
+  cartSnapshot            String
+  totalAmount             Int
+  stripeCheckoutSessionId String?         @unique
+  completedOrderId        String?
+  restaurant              Restaurant      @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  table                   RestaurantTable @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  createdAt               DateTime        @default(now())
+  updatedAt               DateTime        @updatedAt
+}
