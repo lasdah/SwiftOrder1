@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  min-height: 100vh;
+  background: #fbfaf7;
+  color: #18212f;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-mint focus:ring-offset-2;
+}
